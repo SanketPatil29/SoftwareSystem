@@ -11,10 +11,9 @@ Two programs communicating through FIFO (One way communication)
 
 int main(){
     int fd;
-    char buff[100] = "program 1 msg";
-
-    fd = open("myfifo", O_RDONLY);
-    write(fd, buff, strlen(buff));
+    char* buff = "program 1 msg";
+    fd = open("myfifo", O_WRONLY);
+    write(fd, buff, strlen(buff)+1);
     close(fd);
     return 0;
 }
