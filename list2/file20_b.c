@@ -11,7 +11,7 @@ Two programs communicating through FIFO (One way communication)
 
 int main(){
     char read_buff[100];
-    int fd = open("file20", O_RDONLY, 0666);
+    int fd = open("file20", O_RDONLY);
     read(fd, read_buff, sizeof(read_buff));
     printf("Msg: %s\n", read_buff);
     close(fd);
