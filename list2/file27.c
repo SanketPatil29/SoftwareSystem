@@ -1,7 +1,7 @@
 /*
 Name: Sanket S. Patil (MT2023051).
 
-Program to send messages to message queue.
+Program to receive messages to message queue.
 */
 
 #include<stdio.h>
@@ -23,15 +23,17 @@ int main(){
    
     // Key is generated
     key = ftok("./file26.c", 'a');
+
     // Message ID
-    msgq_id = msgget(key, 0666 | IPC_CREAT);
-    msq.m_type = 1;
-
-    printf("Enter Message: ");
-    scanf(" %[^\n]", msq.message);
-
+    msgq_id = msgget(key, 0666);
+    int ret = msgrcv(msgq_id, &msq, sizeof(msq), 1, 0);
     
-    msgsnd(msgq_id, &msq, sizeof(msq), 0);
+    if (ret == -1){
+        perror("RET");
+        exit(-1);
+    }
+
+    printf("Message: %s\n", msq.message);
 
     return 0;
 }
