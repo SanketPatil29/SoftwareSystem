@@ -32,9 +32,13 @@ int main(){
         perror("RET");
         exit(-1);
     }
-
+    // msg with flag 0
     printf("Message: %s\n", msq.message);
 
+    int ret2 = msgrcv(msgq_id, &msq, sizeof(msq), 2, IPC_NOWAIT);
+    if (ret2 != -1){
+        printf("Message received with IPC_NOWAIT flag: %s\n", msq.message);
+    }
     return 0;
 }
 
