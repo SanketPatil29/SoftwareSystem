@@ -13,14 +13,24 @@ int main(){
     key_t key;
     int msgId;
 
-    key = ftok("./file24.c", 'a');
+    //Generated Key 
+    key = ftok("./file24.c", 'b');
     if(key == -1){
         perror("ftok");
         exit(1);
     }
+    // msgQ-id of file24
+    msgId = msgget(key, 0644);
+    if(msgId == -1){
+        perror("msgID");
+        exit(1);
+    }
 
     //Remove message queue.
-    msgctl(0, IPC_RMID, NULL);
-    printf("Msg queue is removed!\n");
+    if(msgctl(msgId, IPC_RMID, NULL) == -1){
+        perror("MSG_Control");
+        exit(1);
+    }
+    printf("Msg queue %d is removed!\n", msgId);
     return 0;
 }
