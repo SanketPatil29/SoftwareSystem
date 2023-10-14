@@ -34,7 +34,7 @@ int main() {
     while (1) {
         // Receive data from the server
         char buffer[1024];
-        memset(buffer, 0, sizeof(buffer));
+        memset(buffer, '\0', sizeof(buffer));
         ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
         if (bytesRead <= 0) {
             perror("Error receiving data");

@@ -146,8 +146,8 @@ int viewFaculty(int clientSocket) {
         if (strcmp(faculty_info.faculty_id, facultyId) == 0) {
             // Found the faculty with the specified ID, send details to the client
             char facultyDetailsBuffer[1024];
-            snprintf(facultyDetailsBuffer, sizeof(facultyDetailsBuffer), "ID: %s\nName: %s\nDepartment: %s\nEmail: %s\nDesignation: %s\npass: %s\n",
-                     faculty_info.faculty_id, faculty_info.name, faculty_info.dept, faculty_info.email, faculty_info.designation, faculty_info.password);
+            snprintf(facultyDetailsBuffer, sizeof(facultyDetailsBuffer), "ID: %s\nName: %s\nDepartment: %s\nEmail: %s\nDesignation: %s\n",
+                     faculty_info.faculty_id, faculty_info.name, faculty_info.dept, faculty_info.email, faculty_info.designation);
             send(clientSocket, facultyDetailsBuffer, strlen(facultyDetailsBuffer), 0);
             facultyFound = 1;
             break;
@@ -172,6 +172,7 @@ int viewFaculty(int clientSocket) {
 //     // Format the login ID as "ST2023XXX"
 //     snprintf(loginID, 11, "ST2023%03d", *lastID);
 // }
+
 
 int addStudent(int clientSocket) {
     struct student stud_info;
@@ -237,6 +238,7 @@ int addStudent(int clientSocket) {
     // ... (previous code)
 
     // Open the file to enter this data in the database
+    
     int fd = open("student_database.txt", O_WRONLY | O_APPEND | O_CREAT, 0666); // Open the file in append mode
 
     if (fd == -1) {

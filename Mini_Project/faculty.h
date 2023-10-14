@@ -18,7 +18,20 @@ void viewCourse(int clientSocket) {
 
     // Receive course ID from the client
     send(clientSocket, "Enter Course ID to View Details: ", strlen("Enter Course ID to View Details: "), 0);
-    recv(clientSocket, search_course_id, sizeof(search_course_id), 0);
+    int bytesRead = recv(clientSocket, search_course_id, sizeof(search_course_id), 0);
+     if(bytesRead <= 0)
+    {
+        close(clientSocket);
+        return;
+    }
+    if(search_course_id[bytesRead - 1] == '\n')
+    {
+        search_course_id[bytesRead - 1] = '\0';
+    }
+    else
+    {
+        search_course_id[bytesRead] = '\0';
+    }
 
     // Open the course database file for reading
     int fd = open("course_database.txt", O_RDONLY);
@@ -31,14 +44,19 @@ void viewCourse(int clientSocket) {
     bool found = false;
 
     // Loop to search for the course in the file
+    memset(temp_course.course_id, '\0', sizeof(temp_course));
     while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
         // Check if the course ID matches
-        if (strcmp(search_course_id, temp_course.course_id) == 0) {
+        printf("%s %s\n", search_course_id, temp_course.course_id);
+        int res = strcmp(search_course_id, temp_course.course_id);
+        printf("%d\n", res);
+        if (res == 0) {
             // Send course details to the client
             send(clientSocket, &temp_course, sizeof(temp_course), 0);
             found = true;
             break;
         }
+        memset(temp_course.course_id, '\0', sizeof(temp_course));
     }
 
     // If the course is not found, send a message to the client
@@ -53,6 +71,7 @@ void addCourse(int clientSocket) {
 
     // Receive course details from the client
     send(clientSocket, "Enter Course ID: ", strlen("Enter Course ID: "), 0);
+    memset(new_course.course_id, '\0', sizeof(new_course.course_id));
     int bytesRead = recv(clientSocket, new_course.course_id, sizeof(new_course.course_id) - 1, 0);
     new_course.course_id[bytesRead] = '\0';
 
@@ -69,6 +88,11 @@ void addCourse(int clientSocket) {
 
     send(clientSocket, "Enter Credits: ", strlen("Enter Credits: "), 0);
     recv(clientSocket, &new_course.credits, sizeof(new_course.credits), 0);
+
+    // Additional checks to ensure proper string termination
+    new_course.course_id[sizeof(new_course.course_id) - 1] = '\0';
+    new_course.course_name[sizeof(new_course.course_name) - 1] = '\0';
+    new_course.department[sizeof(new_course.department) - 1] = '\0';
 
     // Open the course database file for appending
     // Open the file to enter this data in the database
@@ -180,18 +204,19 @@ int faculty_functionality(int clientSocket)
 
             send(clientSocket, adminPrompt, strlen(adminPrompt), 0);
             //readBytes store no of bytes read from the client by the server
-            ssize_t readBytes = recv(clientSocket, readbuff, sizeof(readbuff), 0);
+            printf("Before receiving\n");
+            int readBytes = recv(clientSocket, readbuff, sizeof(readbuff), 0);
+            printf("after receiving\n");
             if (readBytes == -1)
             {
                 perror("Error in the choice you provided");
                 return false;
             }
             int choice = atoi(readbuff);
-            send(clientSocket,readbuff,sizeof(readbuff),0);
-
             switch (choice)
             {
             case 1:
+                    printf("I am here");
                     viewCourse(clientSocket);
                     break;
             case 2:
