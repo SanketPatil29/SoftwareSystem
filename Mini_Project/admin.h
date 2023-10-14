@@ -407,7 +407,7 @@ int admin_functionality(int clientSocket)
 
         while (1)
         {
-            char adminPrompt[] = "\nAdmin can Do:\n - 1. Add Student\n - 2. View Student Details\n - 3. Add Faculty\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 9. Logout and Exit\n";
+            char adminPrompt[] = "\n----------Admin Menu----------\n - 1. Add Student\n - 2. View Student Details\n - 3. Add Faculty\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 9. Logout and Exit\n";
             send(clientSocket, adminPrompt, strlen(adminPrompt), 0);
             
             ssize_t readBytes = recv(clientSocket, readbuff, sizeof(readbuff), 0);

@@ -5,7 +5,6 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define PORT 8080 
 #define BUFFER_SIZE 1024
 
 int main(int argc,char* argv[]) {

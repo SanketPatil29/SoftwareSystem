@@ -213,13 +213,13 @@ int faculty_functionality(int clientSocket)
         char readbuff[1000], writebuff[1000]; // A buffer used for reading & writing to the client
         while (1)
         {
-            char adminPrompt[] = "\n - 1. View offering courses\n - 2. Add new course\n - 3. Remove course from catalog\n - 4. Update course details\n - 5. Change password\n - 6. Logout and exit\n Enter your choice: ";
+            char adminPrompt[] = "\n----------Faculty Menu----------\n - 1. View offering courses\n - 2. Add new course\n - 3. Remove course from catalog\n - 4. Update course details\n - 5. Change password\n - 6. Logout and exit\n Enter your choice: ";
 
             send(clientSocket, adminPrompt, strlen(adminPrompt), 0);
             //readBytes store no of bytes read from the client by the server
-            printf("Before receiving\n");
+    
             int readBytes = recv(clientSocket, readbuff, sizeof(readbuff), 0);
-            printf("after receiving\n");
+        
             if (readBytes == -1)
             {
                 perror("Error in the choice you provided");

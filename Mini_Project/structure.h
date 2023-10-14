@@ -10,13 +10,13 @@ struct UserCredentials adminCredentials = {"admin01", "0051"};
 
 struct student
 {
-	char student_id[20];
-    char password[20];
-	char name[30];
+	char student_id[10];
+    char password[10];
+	char name[20];
     char dept[20];
     char age[10];
-    char email[25];
-    char address[100];
+    char email[20];
+    char address[30];
 };
 
 struct faculty
@@ -24,19 +24,19 @@ struct faculty
     char password[20];
 	char faculty_id[11];
 	char dept[20];
-	char name[30];
-    char address[100];
-    char designation[25];
+	char name[20];
+    char address[30];
+    char designation[20];
     char email[25];
 };
 
 // Structure to represent a course
 struct course {
-    char course_id[50];
-    char course_name[100];
-    char department[50];
-    char seats[4];
-    char credits[4];
+    char course_id[10];
+    char course_name[10];
+    char department[10];
+    char seats[10];
+    char credits[10];
 };
 
 #endif // STRUCTURE_H

@@ -10,8 +10,6 @@
 #include "faculty.h"
 #include "admin.h"
 #include "student.h"
-
-#define PORT 8080 
 #define BUFFER_SIZE 1024
 int serverRunning = 1;
 
@@ -48,21 +46,21 @@ void handleClient(int clientSocket)
 		// Admin
 		if (buffer[0] == '1')
 		{
-			char response[] = "----------Admin Menu----------\n";
+			char response[] = "----------Admin----------\n";
 			send(clientSocket, response, strlen(response), 0);
 			if(!admin_functionality(clientSocket))continue;
 		}
 		// Faculty
 		else if (buffer[0] == '2')
 		{
-			char response[] = "----------Faculty Menu----------\n";
+			char response[] = "----------Faculty----------\n";
 			send(clientSocket, response, strlen(response), 0);
 			if(!faculty_functionality(clientSocket))continue;
 		}
 		// Student
 		else if (buffer[0] == '3')
 		{
-			char response[] = "----------Student Menu----------\n";
+			char response[] = "----------Student----------\n";
 			send(clientSocket, response, strlen(response), 0);
 			if(!student_functionality(clientSocket))continue;
 		}
@@ -107,7 +105,7 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	printf("Server is Listening on Port %d...\n", PORT);
+	printf("Server is Listening on Port %s...\n", argv[1]);
 	signal(SIGINT, signalHandler);
 	signal(SIGTERM, signalHandler);
 
