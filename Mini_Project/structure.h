@@ -35,8 +35,8 @@ struct course {
     char course_id[50];
     char course_name[100];
     char department[50];
-    int seats;
-    int credits;
+    char seats[4];
+    char credits[4];
 };
 
 #endif // STRUCTURE_H

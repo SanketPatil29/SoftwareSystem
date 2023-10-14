@@ -8,8 +8,11 @@
 #define PORT 8080 
 #define BUFFER_SIZE 1024
 
-int main() {
-
+int main(int argc,char* argv[]) {
+    if(argc!=2){
+        perror("Mention port no as well");
+        return 0;
+    }
     int clientSocket;
     struct sockaddr_in serverAddress;
 
@@ -20,7 +23,7 @@ int main() {
     }
 
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(PORT);
+    serverAddress.sin_port = htons(atoi(argv[1]));
     serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     // Connecting with the server

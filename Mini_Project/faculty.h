@@ -14,11 +14,11 @@
 
 void viewCourse(int clientSocket) {
     char search_course_id[50];
-    struct course temp_course;
+    struct course temp_course,t;
 
     // Receive course ID from the client
     send(clientSocket, "Enter Course ID to View Details: ", strlen("Enter Course ID to View Details: "), 0);
-    int bytesRead = recv(clientSocket, search_course_id, sizeof(search_course_id), 0);
+    int bytesRead = recv(clientSocket, t.course_id, sizeof(t.course_id), 0);
      if(bytesRead <= 0)
     {
         close(clientSocket);
@@ -44,15 +44,18 @@ void viewCourse(int clientSocket) {
     bool found = false;
 
     // Loop to search for the course in the file
-    memset(temp_course.course_id, '\0', sizeof(temp_course));
+    //memset(temp_course.course_id, '\0', sizeof(temp_course));
     while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
         // Check if the course ID matches
         printf("%s %s\n", search_course_id, temp_course.course_id);
-        int res = strcmp(search_course_id, temp_course.course_id);
+        int res = strcmp(t.course_id, temp_course.course_id);
         printf("%d\n", res);
         if (res == 0) {
             // Send course details to the client
-            send(clientSocket, &temp_course, sizeof(temp_course), 0);
+            char facultyDetailsBuffer[1024];
+            snprintf(facultyDetailsBuffer, sizeof(facultyDetailsBuffer), "Name: %s\nDepartment: %s\nSeats: %s\nCredits: %s\n",
+                    temp_course.course_name, temp_course.department, temp_course.seats, temp_course.credits);
+            send(clientSocket, facultyDetailsBuffer, strlen(facultyDetailsBuffer), 0);
             found = true;
             break;
         }
@@ -70,9 +73,17 @@ void addCourse(int clientSocket) {
     struct course new_course;
 
     // Receive course details from the client
-    send(clientSocket, "Enter Course ID: ", strlen("Enter Course ID: "), 0);
-    memset(new_course.course_id, '\0', sizeof(new_course.course_id));
-    int bytesRead = recv(clientSocket, new_course.course_id, sizeof(new_course.course_id) - 1, 0);
+    // send(clientSocket, "Enter Course ID: ", strlen("Enter Course ID: "), 0);
+    // memset(new_course.course_id, '\0', sizeof(new_course.course_id));
+    // int bytesRead = recv(clientSocket, new_course.course_id, sizeof(new_course.course_id) - 1, 0);
+    // new_course.course_id[bytesRead] = '\0';
+
+    send(clientSocket, "Enter the Course_id ", strlen("Enter the Couuse-ID: "), 0);
+    int bytesRead = recv(clientSocket, new_course.course_id, sizeof(new_course.course_id), 0);
+    if (bytesRead <= 0) {
+        perror("Error while receiving  ID");
+        return;
+    }
     new_course.course_id[bytesRead] = '\0';
 
     send(clientSocket, "Enter Course Name: ", strlen("Enter Course Name: "), 0);
@@ -84,10 +95,12 @@ void addCourse(int clientSocket) {
     new_course.department[bytesRead] = '\0';
 
     send(clientSocket, "Enter Number of Seats: ", strlen("Enter Number of Seats: "), 0);
-    recv(clientSocket, &new_course.seats, sizeof(new_course.seats), 0);
+    bytesRead = recv(clientSocket, new_course.seats, sizeof(new_course.seats)-1, 0);
+    new_course.seats[bytesRead] = '\0';
 
     send(clientSocket, "Enter Credits: ", strlen("Enter Credits: "), 0);
-    recv(clientSocket, &new_course.credits, sizeof(new_course.credits), 0);
+    bytesRead = recv(clientSocket, new_course.credits, sizeof(new_course.credits)-1, 0);
+    new_course.credits[bytesRead] = '\0';
 
     // Additional checks to ensure proper string termination
     new_course.course_id[sizeof(new_course.course_id) - 1] = '\0';
@@ -216,7 +229,6 @@ int faculty_functionality(int clientSocket)
             switch (choice)
             {
             case 1:
-                    printf("I am here");
                     viewCourse(clientSocket);
                     break;
             case 2:

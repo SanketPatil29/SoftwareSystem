@@ -78,7 +78,7 @@ void handleClient(int clientSocket)
 }
 
 
-int main()
+int main(int argc,char *argv[])
 {
 	int serverSocket, clientSocket;
 	struct sockaddr_in serverAddress, clientAddress;
@@ -92,7 +92,7 @@ int main()
 	}
 
 	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_port = htons(PORT);
+	serverAddress.sin_port = htons(atoi(argv[1]));
 	serverAddress.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)

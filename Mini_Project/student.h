@@ -40,53 +40,53 @@ void viewAllCourses(int clientSocket) {
     close(fd);
 }
 
-void enrollNewCourse(int clientSocket) {
-    char enroll_course_id[50];
-    struct course temp_course;
+// void enrollNewCourse(int clientSocket) {
+//     char enroll_course_id[50];
+//     struct course temp_course;
 
-    // Receive course ID from the client
-    send(clientSocket, "Enter Course ID to Enroll: ", strlen("Enter Course ID to Enroll: "), 0);
-    recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
+//     // Receive course ID from the client
+//     send(clientSocket, "Enter Course ID to Enroll: ", strlen("Enter Course ID to Enroll: "), 0);
+//     recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
 
-    // Open the course database file for reading and writing
-    int fd = open("course_database.txt", O_RDWR);
-    if (fd == -1) {
-        perror("Error opening file");
-        send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
-        return;
-    }
+//     // Open the course database file for reading and writing
+//     int fd = open("course_database.txt", O_RDWR);
+//     if (fd == -1) {
+//         perror("Error opening file");
+//         send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
+//         return;
+//     }
 
-    // Loop to search for the course in the file
-    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
-        // Check if the course ID matches
-        if (strcmp(enroll_course_id, temp_course.course_id) == 0) {
-            // Check if there are available seats
-            if (temp_course.seats > 0) {
-                // Decrement the number of available seats by 1
-                temp_course.seats--;
+//     // Loop to search for the course in the file
+//     while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+//         // Check if the course ID matches
+//         if (strcmp(enroll_course_id, temp_course.course_id) == 0) {
+//             // Check if there are available seats
+//             if (temp_course.seats > 0) {
+//                 // Decrement the number of available seats by 1
+//                 temp_course.seats--;
 
-                // Move the file pointer back by the size of the course structure
-                lseek(fd, -sizeof(struct course), SEEK_CUR);
+//                 // Move the file pointer back by the size of the course structure
+//                 lseek(fd, -sizeof(struct course), SEEK_CUR);
 
-                // Write the updated course information back to the file
-                write(fd, &temp_course, sizeof(struct course));
+//                 // Write the updated course information back to the file
+//                 write(fd, &temp_course, sizeof(struct course));
 
-                send(clientSocket, "Enrollment Success\n", strlen("Enrollment Success\n"), 0);
-            } else {
-                send(clientSocket, "No available seats\n", strlen("No available seats\n"), 0);
-            }
+//                 send(clientSocket, "Enrollment Success\n", strlen("Enrollment Success\n"), 0);
+//             } else {
+//                 send(clientSocket, "No available seats\n", strlen("No available seats\n"), 0);
+//             }
 
-            break;
-        }
-    }
+//             break;
+//         }
+//     }
 
-    // If the course is not found, send a message to the client
-    if (temp_course.seats == 0) {
-        send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
-    }
+//     // If the course is not found, send a message to the client
+//     if (temp_course.seats == 0) {
+//         send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
+//     }
 
-    close(fd);
-}
+//     close(fd);
+// }
 
 int authenticateStudent(int clientSocket)
 {
@@ -183,7 +183,7 @@ int student_functionality(int clientSocket)
                     viewAllCourses(clientSocket);
                     break;
             case 2:
-                    // viewStudent(clientSocket);
+                    // enrollNewCourse(clientSocket);
                     break;
             case 3:
                     // addFaculty(clientSocket);
