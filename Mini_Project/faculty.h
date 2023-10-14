@@ -12,96 +12,69 @@
 #include <sys/socket.h>
 #include "structure.h"
 
+
 int authenticateFaculty(int clientSocket)
 {
-    char username[100];
-    char pass[100];
+    struct faculty faculty_info, temp_buffer;
+    int fd = open("faculty_database.txt", O_RDONLY, 0644);
 
-    // Send a prompt for the username
-    const char *userPrompt = "\nEnter login id of faculty: ";
-    send(clientSocket, userPrompt, strlen(userPrompt), 0);
-
-    // Receive the username from the client
-    ssize_t bytesRead = recv(clientSocket, username, sizeof(username), 0);
-    if (bytesRead <= 0)
+    if ( fd == -1)
     {
-        close(clientSocket);
-        return false;
-    }
-    if (username[bytesRead - 1] == '\n')
-    {
-        username[bytesRead - 1] = '\0';
-    }
-    else
-    {
-        username[bytesRead] = '\0';
+        perror("Error opening file");
+        return 0;
     }
 
-    // Send a prompt for the password
-    const char *passPrompt = "\nEnter password of the Admin: ";
-    send(clientSocket, passPrompt, strlen(passPrompt), 0);
+    bool found = false;
+    char buffer[1024];
+    send(clientSocket, "Enter FacultyID: ", strlen("Enter FacultyID: "), 0);
 
-    // Receive the password from the client
-    bytesRead = recv(clientSocket, pass, sizeof(pass), 0);
-    if (bytesRead <= 0)
+    // Faculty ID
+    int readResult = read(clientSocket, faculty_info.faculty_id, sizeof(faculty_info.faculty_id) - 1);
+    if (readResult <= 0)
     {
-        close(clientSocket);
-        return false;
+        send(clientSocket, "Error receiving faculty username from server", strlen("Error receiving faculty username from server"), 0);
+        return 0;
     }
-    if (pass[bytesRead - 1] == '\n')
-    {
-        pass[bytesRead - 1] = '\0';
-    }
-    else
-    {
-        pass[bytesRead] = '\0';
-    }
+    faculty_info.faculty_id[readResult] = '\0';
 
-    int fd = open("faculty_database.txt", O_RDONLY);
-    if (fd == -1) {
-        perror("Error opening the file\n");
-        close(fd);
-        send(clientSocket, "Error reading faculty details\n", strlen("Error reading faculty details\n"), 0);
-        return 1;
-    }
-    // Use flock to apply mandatory lock
-    if (flock(fd, LOCK_SH) == -1) {
-        perror("Error applying lock");
-        close(fd);
-        send(clientSocket, "Error reading faculty details\n", strlen("Error reading faculty details\n"), 0);
-        return 1;
-    }
+    send(clientSocket, "Enter Faculty Password: ", strlen("Enter Faculty Password: "), 0);
 
-    // Read faculty details from the file and send the details of the specified faculty ID to the client
-    struct faculty faculty_info;
-    ssize_t facultyFound = 0;
-    while (read(fd, &faculty_info, sizeof(struct faculty)) > 0) {
-        if (strcmp(faculty_info.faculty_id, username) == 0) {
-            // Found the faculty with the specified ID, send details to the client
-            if (strcmp(faculty_info.password, pass) == 0){
-                facultyFound = 1;
-            }
+    // Faculty Password
+    readResult = read(clientSocket, faculty_info.password, sizeof(faculty_info.password) - 1);
+    if (readResult <= 0)
+    {
+        send(clientSocket, "Error receiving faculty password from server", strlen("Error receiving faculty password from server"), 0);
+        return 0;
+    }
+    faculty_info.password[readResult] = '\0';
+
+    lseek(fd, 0, SEEK_SET);
+    while (read(fd, &temp_buffer, sizeof(temp_buffer)) > 0)
+    {
+        if ((strcmp(faculty_info.faculty_id, temp_buffer.faculty_id) == 0) && (strcmp(faculty_info.password, temp_buffer.password) == 0))
+        {
+            // Faculty found
+            found = true;
             break;
         }
     }
 
-    if (facultyFound) 
-    {  // Authentication successful
-        char * success_msg = "Authentication successful\n"; ///
-        send(clientSocket, success_msg, strlen(success_msg), 0);
-        return true;
+    if (found)
+    {
+        send(clientSocket, "Authentication Success\n", strlen("Authentication Success\n"), 0);
+        close(fd);
+        return 1;
     }
-    else{
-    // Authentication failed
-    char * failure_msg = "Authentication failed\n"; ///
-    send(clientSocket, failure_msg, strlen(failure_msg), 0);
-    close(clientSocket);
-    return false;
+    else
+    {
+        send(clientSocket, "Authentication Failed\n", strlen("Authentication Failed\n"), 0);
+        close(fd);
+        return 0;
     }
+    return 0;
 }
 
 
-//Returns 1 if login successfully
 int faculty_functionality(int clientSocket) 
 {
     if (authenticateFaculty(clientSocket))
@@ -109,8 +82,6 @@ int faculty_functionality(int clientSocket)
         char readbuff[1000], writebuff[1000]; // A buffer used for reading & writing to the client
         while (1)
         {
-            char * login_msg = "\nLogin Successfully\n";
-            send(clientSocket, login_msg, strlen(login_msg), 0);///
             char adminPrompt[] = "\nAdmin can Do:\n - 1. Add Student\n - 2. View Student Details\n - 3. Add Faculty\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 8. Logout and Exit\n";
 
             send(clientSocket, adminPrompt, strlen(adminPrompt), 0);

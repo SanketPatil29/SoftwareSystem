@@ -12,71 +12,6 @@
 #include <sys/socket.h>
 #include "structure.h"
 
-int authenticateadmin(int clientSocket)
-{
-    char username[100];
-    char pass[100];
-
-    // Send a prompt for the username
-    const char *userPrompt = "\nEnter Username of Admin: ";
-    send(clientSocket, userPrompt, strlen(userPrompt), 0);
-
-    // Receive the username from the client
-    ssize_t bytesRead = recv(clientSocket, username, sizeof(username), 0);
-    if (bytesRead <= 0)
-    {
-        close(clientSocket);
-        return false;
-    }
-    if (username[bytesRead - 1] == '\n')
-    {
-        username[bytesRead - 1] = '\0';
-    }
-    else
-    {
-        username[bytesRead] = '\0';
-    }
-
-    // Send a prompt for the password
-    const char *passPrompt = "\nEnter password of the Admin: ";
-    send(clientSocket, passPrompt, strlen(passPrompt), 0);
-
-    // Receive the password from the client
-    bytesRead = recv(clientSocket, pass, sizeof(pass), 0);
-    if (bytesRead <= 0)
-    {
-        close(clientSocket);
-        return false;
-    }
-    if (pass[bytesRead - 1] == '\n')
-    {
-        pass[bytesRead - 1] = '\0';
-    }
-    else
-    {
-        pass[bytesRead] = '\0';
-    }
-
-    // Compare the received username and password with stored credentials
-    if (strcmp(username, adminCredentials.username) == 0 &&
-        strcmp(pass, adminCredentials.pass) == 0)
-    {
-        // Authentication successful
-        char * success_msg = "Authentication successful\n"; ///
-        send(clientSocket, success_msg, strlen(success_msg), 0);
-        return true;
-    }
-    else
-    {
-        // Authentication failed
-        char * failure_msg = "Authentication failed\n"; ///
-        send(clientSocket, failure_msg, strlen(failure_msg), 0);
-        close(clientSocket);
-        return false;
-    }
-}
-
-
 int addFaculty(int clientSocket) {
     struct faculty faculty_info;
 
@@ -89,17 +24,17 @@ int addFaculty(int clientSocket) {
     }
     faculty_info.faculty_id[bytesRead] = '\0';
 
-    // Client will enter the faculty ID
-    send(clientSocket, "Enter password of the faculty you want to add\n", strlen("Enter password of the faculty you want to add\n"), 0);
+    // Client will enter the faculty password
+    send(clientSocket, "Enter password: ", strlen("Enter password: "), 0);
     bytesRead = recv(clientSocket, faculty_info.password, sizeof(faculty_info.password), 0);
     if (bytesRead <= 0) {
-        perror("Error while receiving faculty password\n");
+        perror("Error while receiving faculty ID");
         return 1;
     }
     faculty_info.password[bytesRead] = '\0';
 
     // Client will enter the faculty name
-    send(clientSocket, "Enter the Name of the faculty you want to add\n", strlen("Enter the Name of the faculty you want to add\n"), 0);
+    send(clientSocket, "Enter Name: ", strlen("Enter Name: "), 0);
     bytesRead = recv(clientSocket, faculty_info.name, sizeof(faculty_info.name), 0);
     if (bytesRead <= 0) {
         perror("Error while receiving faculty name");
@@ -175,7 +110,7 @@ int addFaculty(int clientSocket) {
 
 int viewFaculty(int clientSocket) {
     // Ask the client for a faculty ID
-    send(clientSocket, "Enter login ID of faculty:\n", strlen("Enter Faculty ID to view details:\n"), 0);
+    send(clientSocket, "Enter login ID of faculty: ", strlen("Enter login ID of faculty: "), 0);
 
     // Receive the faculty ID from the client
     char facultyId[11];
@@ -211,8 +146,8 @@ int viewFaculty(int clientSocket) {
         if (strcmp(faculty_info.faculty_id, facultyId) == 0) {
             // Found the faculty with the specified ID, send details to the client
             char facultyDetailsBuffer[1024];
-            snprintf(facultyDetailsBuffer, sizeof(facultyDetailsBuffer), "ID: %s\nName: %s\nDepartment: %s\nEmail: %s\nDesignation: %s\n\n",
-                     faculty_info.faculty_id, faculty_info.name, faculty_info.dept, faculty_info.email, faculty_info.designation);
+            snprintf(facultyDetailsBuffer, sizeof(facultyDetailsBuffer), "ID: %s\nName: %s\nDepartment: %s\nEmail: %s\nDesignation: %s\npass: %s\n",
+                     faculty_info.faculty_id, faculty_info.name, faculty_info.dept, faculty_info.email, faculty_info.designation, faculty_info.password);
             send(clientSocket, facultyDetailsBuffer, strlen(facultyDetailsBuffer), 0);
             facultyFound = 1;
             break;
@@ -241,16 +176,59 @@ int viewFaculty(int clientSocket) {
 int addStudent(int clientSocket) {
     struct student stud_info;
 
-    // ... (previous code)
-
-    //Client will enter the name
-    send(clientSocket, "Enter the Name of the student you want to add\n", strlen("Enter the Name of the student you want to add\n"), 0);
+    // Name
+    send(clientSocket, "Enter name: ", strlen("Enter name: "), 0);
     int bytesRead = recv(clientSocket, stud_info.name, sizeof(stud_info.name), 0);
     if (bytesRead <= 0) {
         perror("Error while receiving Name\n");
         return false;
     }
     stud_info.name[bytesRead] = '\0';
+
+    // Student ID
+    send(clientSocket, "Enter the Student-ID: ", strlen("Enter the Student-ID: "), 0);
+    bytesRead = recv(clientSocket, stud_info.student_id, sizeof(stud_info.student_id), 0);
+    if (bytesRead <= 0) {
+        perror("Error while receiving student ID");
+        return 1;
+    }
+    stud_info.student_id[bytesRead] = '\0';
+
+    // Password
+    send(clientSocket, "Enter password: ", strlen("Enter password: "), 0);
+    bytesRead = recv(clientSocket, stud_info.password, sizeof(stud_info.password), 0);
+    if (bytesRead <= 0) {
+        perror("Error while receiving student password\n");
+        return 1;
+    }
+    stud_info.password[bytesRead] = '\0';
+
+    // Department
+    send(clientSocket, "Enter the Department: ", strlen("Enter the Department: "), 0);
+    bytesRead = recv(clientSocket, stud_info.dept, sizeof(stud_info.dept), 0);
+    if (bytesRead <= 0) {
+        perror("Error while receiving student department\n");
+        return 1;
+    }
+    stud_info.dept[bytesRead] = '\0';
+
+    // Address
+    send(clientSocket, "Enter Address: ", strlen("Enter Address: "), 0);
+    bytesRead = recv(clientSocket, stud_info.address, sizeof(stud_info.address), 0);
+    if (bytesRead <= 0) {
+        perror("Error while receiving student address\n");
+        return 1;
+    }
+    stud_info.address[bytesRead] = '\0';
+
+    // Email
+    send(clientSocket, "Enter the Email: ", strlen("Enter the Email: "), 0);
+    bytesRead = recv(clientSocket, stud_info.email, sizeof(stud_info.email), 0);
+    if (bytesRead <= 0) {
+        perror("Error while receiving student email\n");
+        return 1;
+    }
+    stud_info.email[bytesRead] = '\0';
 
     // Generate sequential login ID for student
     // int lastID = 500; // Initialize with the last used ID (you may load it from a file or database)
@@ -289,15 +267,10 @@ int addStudent(int clientSocket) {
         close(fd);
         return 1;
     }
-
     flock(fd, LOCK_UN); // Release the lock
     close(fd);          // Close the file
-
-    // ... (previous code)
-
     return 0;
 }
-
 
 
 int viewStudent(int clientSocket) {
@@ -334,52 +307,114 @@ int viewStudent(int clientSocket) {
     // Read faculty details from the file and send the details of the specified faculty ID to the client
     struct student student_info;
     ssize_t SFound = 0;
+
     while (read(fd, &student_info, sizeof(struct student)) > 0) {
-        if (strcmp(student_info.login_id, studentID) == 0) {
+        if (strcmp(student_info.student_id, studentID) == 0) {
             // Found the faculty with the specified ID, send details to the client
-            char facultyDetailsBuffer[1024];
-            snprintf(facultyDetailsBuffer, sizeof(facultyDetailsBuffer), "ID: %s\nName: %s\nDepartment: %s\nEmail: %s\n",
-                     student_info.login_id, student_info.name, student_info.dept, student_info.email);
-            send(clientSocket, facultyDetailsBuffer, strlen(facultyDetailsBuffer), 0);
+            char studentDetailsBuffer[1024];
+            snprintf(studentDetailsBuffer, sizeof(studentDetailsBuffer), "Name: %s\nDepartment: %s\nEmail: %sAddress: %s\n\nID: %s\n",
+                    student_info.name, student_info.dept, student_info.email, student_info.address, student_info.student_id);
+            send(clientSocket, studentDetailsBuffer, strlen(studentDetailsBuffer), 0);
             SFound = 1;
             break;
         }
     }
 
     if (!SFound) {
-        send(clientSocket, "Faculty not found with the specified ID\n", strlen("Faculty not found with the specified ID\n"), 0);
+        char* s_notFound = "student not found with the specified ID\n";
+        send(clientSocket, s_notFound, strlen(s_notFound), 0);
     }
 
-    flock(fd, LOCK_UN); // Release the lock
-    close(fd);          // Close the file
+    flock(fd, LOCK_UN);
+    close(fd);          
 
     return 0;
 }
 
+int authenticateAdmin(int clientSocket)
+{
+    char username[100];
+    char pass[100];
+
+    // Send a prompt for the username
+    const char *userPrompt = "Enter Admin-ID: ";
+    send(clientSocket, userPrompt, strlen(userPrompt), 0);
+
+    // Receive the username from the client
+    ssize_t bytesRead = recv(clientSocket, username, sizeof(username), 0);
+    if(bytesRead <= 0)
+    {
+        close(clientSocket);
+        return false;
+    }
+    if(username[bytesRead - 1] == '\n')
+    {
+        username[bytesRead - 1] = '\0';
+    }
+    else
+    {
+        username[bytesRead] = '\0';
+    }
+
+    // Send a prompt for the password
+    const char *passPrompt = "\nEnter password of the Admin: ";
+    send(clientSocket, passPrompt, strlen(passPrompt), 0);
+
+    // Receive the password from the client
+    bytesRead = recv(clientSocket, pass, sizeof(pass), 0);
+    if (bytesRead <= 0)
+    {
+        close(clientSocket);
+        return false;
+    }
+    if (pass[bytesRead - 1] == '\n')
+    {
+        pass[bytesRead - 1] = '\0';
+    }
+    else
+    {
+        pass[bytesRead] = '\0';
+    }
+
+    // Compare the received username and password with stored credentials
+    if (strcmp(username, adminCredentials.admin_id) == 0 &&
+        strcmp(pass, adminCredentials.pass) == 0)
+    {
+        // Authentication successful
+        char * success_msg = "login successfully\n"; ///
+        send(clientSocket, success_msg, strlen(success_msg), 0);
+        return true;
+    }
+    else
+    {
+        // Authentication failed
+        char * failure_msg = "Authentication failed\n"; ///
+        send(clientSocket, failure_msg, strlen(failure_msg), 0);
+        close(clientSocket);
+        return false;
+    }
+}
 
 
-//Returns 1 if login successfully
+
 int admin_functionality(int clientSocket) 
 {
-    if (authenticateadmin(clientSocket))
+    if (authenticateAdmin(clientSocket)) // Authenticated successfully.
     {
         char readbuff[1000], writebuff[1000]; // A buffer used for reading & writing to the client
+
         while (1)
         {
-            char * login_msg = "\nLogin Successfully\n";
-            send(clientSocket, login_msg, strlen(login_msg), 0);///
-            char adminPrompt[] = "\nAdmin can Do:\n - 1. Add Student\n - 2. View Student Details\n - 3. Add Faculty\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 8. Logout and Exit\n";
-
+            char adminPrompt[] = "\nAdmin can Do:\n - 1. Add Student\n - 2. View Student Details\n - 3. Add Faculty\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 9. Logout and Exit\n";
             send(clientSocket, adminPrompt, strlen(adminPrompt), 0);
-            //readBytes store no of bytes read from the client by the server
+            
             ssize_t readBytes = recv(clientSocket, readbuff, sizeof(readbuff), 0);
             if (readBytes == -1)
             {
-                perror("Error in the choice you provided");
+                perror("Error in choice");
                 return false;
             }
             int choice = atoi(readbuff);
-            //send(clientSocket,readbuff,sizeof(readbuff),0);
 
             switch (choice)
             {
@@ -401,14 +436,14 @@ int admin_functionality(int clientSocket)
             // case 6:
             //         blockStudent(clientSocket);
             //         break;
-            case 8:
-                return 0;
+            case 9:
+                return 0; // Exit from admin menu.
             default:
                     break;
             }
         }
-    }
-    else{
+    }else{
+        // Authentication Failed.
         return 0;
     }
 }

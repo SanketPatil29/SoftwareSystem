@@ -1,18 +1,22 @@
+#ifndef STRUCTURE_H
+#define STRUCTURE_H
+
 struct UserCredentials
 {
-    char username[100];
+    char admin_id[100];
     char pass[100];
 };
-struct UserCredentials adminCredentials = {"sanket patil", "0051"};
+struct UserCredentials adminCredentials = {"admin01", "0051"};
 
 struct student
 {
-	char login_id[20];
+	char student_id[20];
     char password[20];
-	char dept[20];
 	char name[30];
+    char dept[20];
     char age[10];
     char email[25];
+    char address[100];
 };
 
 struct faculty
@@ -25,3 +29,5 @@ struct faculty
     char designation[25];
     char email[25];
 };
+
+#endif // STRUCTURE_H

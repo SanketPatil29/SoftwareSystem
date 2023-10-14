@@ -23,13 +23,14 @@ int main() {
     serverAddress.sin_port = htons(PORT);
     serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
 
+    // Connecting with the server
     if (connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1) {
         perror("Connection failed");
         close(clientSocket);
         exit(1);
     }
+    printf("You are now connected to the server\n");
 
-    printf("You are Now Connected to the server\n");
     while (1) {
         // Receive data from the server
         char buffer[1024];
@@ -39,17 +40,17 @@ int main() {
             perror("Error receiving data");
             break;
         }
-        // Process and display received data
-        printf(">%s", buffer);
+
+        // Display received data
+        printf("%s\n", buffer);
+
         // Send a response (optional)
         char message[1024];
-        printf("\n>");
+      
         memset(message, 0, sizeof(message));
         fgets(message, sizeof(message), stdin);
         send(clientSocket, message, strlen(message), 0);
     }
-
-    // Close the socket
     close(clientSocket);
 
     return 0;
