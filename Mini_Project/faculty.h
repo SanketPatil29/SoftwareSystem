@@ -12,6 +12,108 @@
 #include <sys/socket.h>
 #include "structure.h"
 
+void updateDetails(int clientSocket){
+    char course_id[10];
+    char update_field[10];
+    char update_value[10];
+
+    // Ask the client for the course ID to be updated
+    send(clientSocket, "Enter Course ID to update: ", strlen("Enter Course ID to update: "), 0);
+    recv(clientSocket, course_id, sizeof(course_id), 0);
+
+    // Open the course database file for reading and writing
+    int fd = open("course_database.txt", O_RDWR);
+    if (fd == -1) {
+        perror("Error opening file");
+        send(clientSocket, "Error updating course details\n", strlen("Error updating course details\n"), 0);
+        return;
+    }
+
+    struct course temp_course;
+    int courseFound = 0;
+
+    // Loop through the file and find the course by course_id
+    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+        if (strcmp(course_id, temp_course.course_id) == 0) {
+            courseFound = 1;
+
+            // Ask the client for the field to update
+            send(clientSocket, "Choose field to update (name, seats): ", strlen("Choose field to update (name, seats): "), 0);
+            recv(clientSocket, update_field, sizeof(update_field), 0);
+
+            // Ask the client for the new value
+            send(clientSocket, "Enter new value: ", strlen("Enter new value: "), 0);
+            recv(clientSocket, update_value, sizeof(update_value), 0);
+
+            // Update the chosen field
+            if (strcmp(update_field, "name") == 0) {
+                strncpy(temp_course.course_name, update_value, sizeof(temp_course.course_name) - 1);
+            } else if (strcmp(update_field, "seats") == 0) {
+                strncpy(temp_course.seats, update_value, sizeof(temp_course.seats) - 1);
+            } else {
+                send(clientSocket, "Invalid field specified\n", strlen("Invalid field specified\n"), 0);
+                close(fd);
+                return;
+            }
+
+            // Move the file pointer back by the size of the course structure
+            lseek(fd, -sizeof(struct course), SEEK_CUR);
+            // Write the updated course information back to the file
+            write(fd, &temp_course, sizeof(temp_course));
+
+            send(clientSocket, "Course details updated successfully\n", strlen("Course details updated successfully\n"), 0);
+            break;
+        }
+    }
+
+    if (!courseFound) {
+        send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
+    }
+
+    close(fd);
+}
+
+void removeCourseFromCatalog(int clientSocket) {
+    char course_id[50];
+
+    // Ask the client for the course ID to be removed
+    send(clientSocket, "Enter Course ID to remove from catalog: ", strlen("Enter Course ID to remove from catalog: "), 0);
+    recv(clientSocket, course_id, sizeof(course_id), 0);
+
+    // Remove the course from the catalog
+    struct course temp_course;
+
+    int fd = open("course_database.txt", O_RDWR);
+    if (fd == -1) {
+        perror("Error opening file");
+        send(clientSocket, "Error removing course from catalog\n", strlen("Error removing course from catalog\n"), 0);
+        return;
+    }
+
+    int courseFound = 0;
+
+    // Loop through the file and find the course by course_id
+    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+        if (strcmp(course_id, temp_course.course_id) == 0) {
+            // Found the course, write a null string to course_id field
+            lseek(fd, -sizeof(struct course), SEEK_CUR);
+            memset(&temp_course, '\0', sizeof(temp_course));
+            write(fd, &temp_course, sizeof(temp_course));
+            courseFound = 1;
+            break;
+        }
+    }
+
+    if (!courseFound) {
+        send(clientSocket, "Course not found in catalog\n", strlen("Course not found in catalog\n"), 0);
+    } else {
+        send(clientSocket, "Course removed from catalog\n", strlen("Course removed from catalog\n"), 0);
+    }
+
+    close(fd);
+}
+
+
 void viewCourse(int clientSocket) {
     char search_course_id[50];
     struct course temp_course,t;
@@ -235,10 +337,10 @@ int faculty_functionality(int clientSocket)
                     addCourse(clientSocket);
                     break;
             case 3:
-                    // addFaculty(clientSocket);
+                    removeCourseFromCatalog(clientSocket);
                     break;
             case 4:
-                    // viewFaculty(clientSocket);
+                    updateDetails(clientSocket);
                     break;
             case 5: 
                     // activateStudent(clientSocket);
