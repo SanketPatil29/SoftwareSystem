@@ -12,6 +12,100 @@
 #include <sys/socket.h>
 #include "structure.h"
 
+void viewCourse(int clientSocket) {
+    char search_course_id[50];
+    struct course temp_course;
+
+    // Receive course ID from the client
+    send(clientSocket, "Enter Course ID to View Details: ", strlen("Enter Course ID to View Details: "), 0);
+    recv(clientSocket, search_course_id, sizeof(search_course_id), 0);
+
+    // Open the course database file for reading
+    int fd = open("course_database.txt", O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening file");
+        send(clientSocket, "Error viewing course details\n", strlen("Error viewing course details\n"), 0);
+        return;
+    }
+
+    bool found = false;
+
+    // Loop to search for the course in the file
+    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+        // Check if the course ID matches
+        if (strcmp(search_course_id, temp_course.course_id) == 0) {
+            // Send course details to the client
+            send(clientSocket, &temp_course, sizeof(temp_course), 0);
+            found = true;
+            break;
+        }
+    }
+
+    // If the course is not found, send a message to the client
+    if (!found) {
+        send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
+    }
+
+    close(fd);
+}
+void addCourse(int clientSocket) {
+    struct course new_course;
+
+    // Receive course details from the client
+    send(clientSocket, "Enter Course ID: ", strlen("Enter Course ID: "), 0);
+    int bytesRead = recv(clientSocket, new_course.course_id, sizeof(new_course.course_id) - 1, 0);
+    new_course.course_id[bytesRead] = '\0';
+
+    send(clientSocket, "Enter Course Name: ", strlen("Enter Course Name: "), 0);
+    bytesRead = recv(clientSocket, new_course.course_name, sizeof(new_course.course_name) - 1, 0);
+    new_course.course_name[bytesRead] = '\0';
+
+    send(clientSocket, "Enter Department: ", strlen("Enter Department: "), 0);
+    bytesRead = recv(clientSocket, new_course.department, sizeof(new_course.department) - 1, 0);
+    new_course.department[bytesRead] = '\0';
+
+    send(clientSocket, "Enter Number of Seats: ", strlen("Enter Number of Seats: "), 0);
+    recv(clientSocket, &new_course.seats, sizeof(new_course.seats), 0);
+
+    send(clientSocket, "Enter Credits: ", strlen("Enter Credits: "), 0);
+    recv(clientSocket, &new_course.credits, sizeof(new_course.credits), 0);
+
+    // Open the course database file for appending
+    // Open the file to enter this data in the database
+    int fd = open("course_database.txt", O_WRONLY | O_APPEND | O_CREAT, 0666); // Open the file in append mode
+
+    if (fd == -1) {
+        perror("Error opening the file\n");
+        close(fd);
+        return;
+    }
+
+    // Use flock to apply mandatory lock
+    if (flock(fd, LOCK_EX) == -1) {
+        perror("Error applying lock");
+        close(fd);
+        return;
+    }
+
+    // Use lseek to move the file pointer to the end of the file
+    if (lseek(fd, 0, SEEK_END) == -1) {
+        perror("Error using lseek");
+        flock(fd, LOCK_UN); // Release the lock before closing the file
+        close(fd);
+        return;
+    }
+
+    // Write the structure data to the file
+    if (write(fd, &new_course, sizeof(struct course)) == -1) {
+        perror("Error writing to the file");
+        flock(fd, LOCK_UN); // Release the lock before closing the file
+        close(fd);
+        return;
+    }
+
+    flock(fd, LOCK_UN); // Release the lock
+    close(fd);          // Close the file
+}
 
 int authenticateFaculty(int clientSocket)
 {
@@ -82,7 +176,7 @@ int faculty_functionality(int clientSocket)
         char readbuff[1000], writebuff[1000]; // A buffer used for reading & writing to the client
         while (1)
         {
-            char adminPrompt[] = "\nAdmin can Do:\n - 1. Add Student\n - 2. View Student Details\n - 3. Add Faculty\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 8. Logout and Exit\n";
+            char adminPrompt[] = "\n - 1. View offering courses\n - 2. Add new course\n - 3. Remove course from catalog\n - 4. Update course details\n - 5. Change password\n - 6. Logout and exit\n Enter your choice: ";
 
             send(clientSocket, adminPrompt, strlen(adminPrompt), 0);
             //readBytes store no of bytes read from the client by the server
@@ -93,33 +187,30 @@ int faculty_functionality(int clientSocket)
                 return false;
             }
             int choice = atoi(readbuff);
-            //send(clientSocket,readbuff,sizeof(readbuff),0);
+            send(clientSocket,readbuff,sizeof(readbuff),0);
 
-            // switch (choice)
-            // {
-            // case 1:
-            //         addStudent(clientSocket);
-            //         break;
-            // case 2:
-            //         viewStudent(clientSocket);
-            //         break;
-            // case 3:
-            //         addFaculty(clientSocket);
-            //         break;
-            // case 4:
-            //         viewFaculty(clientSocket);
-            //         break;
-            // case 5: 
-            //         activateStudent(clientSocket);
-            //         break;
-            // case 6:
-            //         blockStudent(clientSocket);
-            //         break;
-            // case 8:
-            //     return 0;
-            // default:
-            //         break;
-            // }
+            switch (choice)
+            {
+            case 1:
+                    viewCourse(clientSocket);
+                    break;
+            case 2:
+                    addCourse(clientSocket);
+                    break;
+            case 3:
+                    // addFaculty(clientSocket);
+                    break;
+            case 4:
+                    // viewFaculty(clientSocket);
+                    break;
+            case 5: 
+                    // activateStudent(clientSocket);
+                    break;
+            case 8:
+                return 0;
+            default:
+                    break;
+            }
         }
     }
     else{

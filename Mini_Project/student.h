@@ -12,6 +12,81 @@
 #include <sys/socket.h>
 #include "structure.h"
 
+// Function to view all course names
+void viewAllCourses(int clientSocket) {
+    struct course temp_course;
+
+    int fd = open("course_database.txt", O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening file");
+        send(clientSocket, "Error viewing course details\n", strlen("Error viewing course details\n"), 0);
+        return;
+    }
+
+    int courseNumber = 1;
+
+    // Loop to read and send all course names
+    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+        // Send course name in the specified format to the client
+        char courseInfo[150];
+        snprintf(courseInfo, sizeof(courseInfo), "%d - %s\n", courseNumber, temp_course.course_name);
+        send(clientSocket, courseInfo, strlen(courseInfo), 0);
+        courseNumber++;
+    }
+
+    // Signal the end of course names
+    send(clientSocket, "End of Course Names\n", strlen("End of Course Names\n"), 0);
+
+    close(fd);
+}
+
+void enrollNewCourse(int clientSocket) {
+    char enroll_course_id[50];
+    struct course temp_course;
+
+    // Receive course ID from the client
+    send(clientSocket, "Enter Course ID to Enroll: ", strlen("Enter Course ID to Enroll: "), 0);
+    recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
+
+    // Open the course database file for reading and writing
+    int fd = open("course_database.txt", O_RDWR);
+    if (fd == -1) {
+        perror("Error opening file");
+        send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
+        return;
+    }
+
+    // Loop to search for the course in the file
+    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+        // Check if the course ID matches
+        if (strcmp(enroll_course_id, temp_course.course_id) == 0) {
+            // Check if there are available seats
+            if (temp_course.seats > 0) {
+                // Decrement the number of available seats by 1
+                temp_course.seats--;
+
+                // Move the file pointer back by the size of the course structure
+                lseek(fd, -sizeof(struct course), SEEK_CUR);
+
+                // Write the updated course information back to the file
+                write(fd, &temp_course, sizeof(struct course));
+
+                send(clientSocket, "Enrollment Success\n", strlen("Enrollment Success\n"), 0);
+            } else {
+                send(clientSocket, "No available seats\n", strlen("No available seats\n"), 0);
+            }
+
+            break;
+        }
+    }
+
+    // If the course is not found, send a message to the client
+    if (temp_course.seats == 0) {
+        send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
+    }
+
+    close(fd);
+}
 
 int authenticateStudent(int clientSocket)
 {
@@ -105,7 +180,7 @@ int student_functionality(int clientSocket)
             switch (choice)
             {
             case 1:
-                    // addStudent(clientSocket);
+                    viewAllCourses(clientSocket);
                     break;
             case 2:
                     // viewStudent(clientSocket);

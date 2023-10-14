@@ -30,4 +30,13 @@ struct faculty
     char email[25];
 };
 
+// Structure to represent a course
+struct course {
+    char course_id[50];
+    char course_name[100];
+    char department[50];
+    int seats;
+    int credits;
+};
+
 #endif // STRUCTURE_H
