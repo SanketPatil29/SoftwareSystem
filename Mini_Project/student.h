@@ -46,6 +46,7 @@ void viewAllCourses(int clientSocket) {
     // Loop to read and send all course names
     while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
         // Send course name in the specified format to the client
+        if (!strlen(temp_course.course_name))continue;
         char courseInfo[150];
         snprintf(courseInfo, sizeof(courseInfo), "%d - %s\n", courseNumber, temp_course.course_name);
         send(clientSocket, courseInfo, strlen(courseInfo), 0);
@@ -59,63 +60,250 @@ void viewAllCourses(int clientSocket) {
 }
 
 void enrollNewCourse(int clientSocket) {
-    char enroll_course_id[50];
-    struct course temp_course;
+    char student_id[50];
+    char course_id[50];
 
-    // Receive course ID from the client
-    send(clientSocket, "Enter Course ID to Enroll: ", strlen("Enter Course ID to Enroll: "), 0);
-    recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
+    // Ask the client for student ID
+    send(clientSocket, "Enter Student ID: ", strlen("Enter Student ID: "), 0);
+    recv(clientSocket, student_id, sizeof(student_id), 0);
 
-    // Open the course database file for reading and writing
-    int fd = open("course_database.txt", O_RDWR);
-    if (fd == -1) {
-        perror("Error opening file");
-        send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
-        return;
-    }
+    // Ask the client for course ID to enroll
+    send(clientSocket, "Enter Course ID to enroll: ", strlen("Enter Course ID to enroll: "), 0);
+    recv(clientSocket, course_id, sizeof(course_id), 0);
 
-    // Loop to search for the course in the file
-    int seat = 0;
-    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
-        // Check if the course ID matches
-        seat = atoi(temp_course.seats);
-        if (strcmp(enroll_course_id, temp_course.course_id) == 0) {
-            // Check if there are available seats
-            if (seat > 0) {
-                // Decrement the number of available seats by 1
-                seat--;
+    // Check if the student is already enrolled in the course
+    int isEnrolled = 0;
 
-                // Move the file pointer back by the size of the course structure
-                lseek(fd, -sizeof(struct course), SEEK_CUR);
-                strncpy(temp_course.seats, intToString(seat), sizeof(temp_course.seats) - 1); 
-                // Write the updated course information back to the file
-                write(fd, &temp_course, sizeof(struct course));
+    // Open the student_course.txt file for reading
+    int studentCourseFile = open("student_course.txt", O_RDWR | O_APPEND | O_CREAT, 0666);
+    if (studentCourseFile != -1) {
+        struct student_course temp_entry;
 
-                send(clientSocket, "Enrollment Success\n", strlen("Enrollment Success\n"), 0);
-            } else {
-                send(clientSocket, "No available seats\n", strlen("No available seats\n"), 0);
+        // Loop through the file to check if the student is already enrolled
+        while (read(studentCourseFile, &temp_entry, sizeof(struct student_course)) > 0) {
+            // Check if the student is already enrolled in the course
+            if (strcmp(student_id, temp_entry.student_id) == 0 && strcmp(course_id, temp_entry.course_id) == 0) {
+                isEnrolled = 1;
+                break;
             }
-
-            break;
         }
     }
 
-    // If the course is not found, send a message to the client
-    if (seat == 0) {
-        send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
-    }
+    if (isEnrolled) {
+        send(clientSocket, "Student is already enrolled in the course\n", strlen("Student is already enrolled in the course\n"), 0);
+        return;
+    } else {
 
-    close(fd);
+        struct course temp_course;
+        // Open the course database file for reading and writing
+        int fd = open("course_database.txt", O_RDWR);
+        if (fd == -1) {
+            perror("Error opening file");
+            send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
+            return;
+        }
+
+        // Loop to search for the course in the file
+        int seat = 0;
+        int found_c = 0;
+        while (read(fd, &temp_course, sizeof(struct course)) > 0) {
+            // Check if the course ID matches
+            seat = atoi(temp_course.seats);
+            if (strcmp(course_id, temp_course.course_id) == 0) {
+                // Check if there are available seats
+                found_c = 1;
+                if (seat > 0) {
+                    struct student_course new_entry;
+
+                    // Decrement the number of available seats by 1
+                    seat--;
+
+                    // Move the file pointer back by the size of the course structure
+                    lseek(fd, -sizeof(struct course), SEEK_CUR);
+                    strncpy(temp_course.seats, intToString(seat), sizeof(temp_course.seats) - 1); 
+                    // Write the updated course information back to the file
+                    write(fd, &temp_course, sizeof(struct course));
+
+                    // Create an instance of struct student_course and write it to the file
+                    strcpy(new_entry.student_id, student_id);
+                    strcpy(new_entry.course_id, course_id);
+
+                    // Write the student_course struct to the file
+                    write(studentCourseFile, &new_entry, sizeof(struct student_course));
+
+                    send(clientSocket, "Enrollment Success\n", strlen("Enrollment Success\n"), 0);
+                } else {
+                    send(clientSocket, "No available seats\n", strlen("No available seats\n"), 0);
+                }
+
+                break;
+            }
+        }
+
+        // If the course is not found, send a message to the client
+        if (found_c == 0) {
+            send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
+        }
+
+        close(fd);
+    }
 }
+
+
+
+// void enrollNewCourse(int clientSocket) {
+//     char student_id[50];
+//     char course_id[50];
+
+//     // Ask the client for student ID
+//     send(clientSocket, "Enter Student ID: ", strlen("Enter Student ID: "), 0);
+//     recv(clientSocket, student_id, sizeof(student_id), 0);
+
+//     // Ask the client for course ID to enroll
+//     send(clientSocket, "Enter Course ID to enroll: ", strlen("Enter Course ID to enroll: "), 0);
+//     recv(clientSocket, course_id, sizeof(course_id), 0);
+
+//     // Check if the student is already enrolled in the course
+//     int isEnrolled = 0;
+
+//     // Open the student_course.txt file for reading
+//     int studentCourseFile = open("student_course.txt",O_CREAT | O_RDWR);
+//     if (studentCourseFile != -1) {
+//         struct student_course temp_entry;
+
+//         // Loop through the file to check if the student is already enrolled
+//         while (read(studentCourseFile, &temp_entry, sizeof(struct student_course)) > 0) {
+//             // Check if the student is already enrolled in the course
+//             if (strcmp(student_id, temp_entry.student_id) == 0 && strcmp(course_id, temp_entry.course_id) == 0) {
+//                 isEnrolled = 1;
+//                 break;
+//             }
+//         }
+
+//         close(studentCourseFile);
+//     }
+
+//     if (isEnrolled) {
+//         send(clientSocket, "Student is already enrolled in the course\n", strlen("Student is already enrolled in the course\n"), 0);
+//         return;
+//     } 
+//     else {
+
+//         struct course temp_course;
+//         // // Receive course ID from the client
+//         // send(clientSocket, "Enter Course ID to Enroll: ", strlen("Enter Course ID to Enroll: "), 0);
+//         // recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
+
+//         // Open the course database file for reading and writing
+//         int fd = open("course_database.txt", O_RDWR);
+//         if (fd == -1) {
+//             perror("Error opening file");
+//             send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
+//             return;
+//         }
+
+//         // Loop to search for the course in the file
+//         int seat = 0;
+//         int found_c = 0;
+//         while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+//             // Check if the course ID matches
+//             seat = atoi(temp_course.seats);
+//             if (strcmp(course_id, temp_course.course_id) == 0) {
+//                 // Check if there are available seats
+//                 found_c = 1;
+//                 if (seat > 0) {
+//                     struct student_course new_entry;
+
+//                     // Decrement the number of available seats by 1
+//                     seat--;
+
+//                     // Move the file pointer back by the size of the course structure
+//                     lseek(fd, -sizeof(struct course), SEEK_CUR);
+//                     strncpy(temp_course.seats, intToString(seat), sizeof(temp_course.seats) - 1); 
+//                     // Write the updated course information back to the file
+//                     write(fd, &temp_course, sizeof(struct course));
+
+//                     // Create an instance of struct student_course and write it to the file
+//                     strcpy(new_entry.student_id, student_id);
+//                     strcpy(new_entry.course_id, course_id);
+
+//                     // Write the student_course struct to the file
+//                     write(studentCourseFile, &new_entry, sizeof(struct student_course));
+
+//                     send(clientSocket, "Enrollment Success\n", strlen("Enrollment Success\n"), 0);
+//                 } else {
+//                     send(clientSocket, "No available seats\n", strlen("No available seats\n"), 0);
+//                 }
+
+//                 break;
+//             }
+//         }
+
+//         // If the course is not found, send a message to the client
+//         if (found_c == 0){
+//             send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
+//         }
+
+//         close(fd);
+//     }
+// }
 
 void dropCourse(int clientSocket){
 
-    char enroll_course_id[50];
+    char enroll_course_id[10];
     struct course temp_course;
+    char student_id[10];
+    char password[10];
+
+     // Prompt for Student ID
+    send(clientSocket, "Enter Student ID: ", strlen("Enter Student ID: "), 0);
+
+    // Read Student ID
+    int readResult = read(clientSocket, student_id, sizeof(student_id) - 1);
+    if (readResult <= 0)
+    {
+        send(clientSocket, "Error receiving student ID from server", strlen("Error receiving student ID from server"), 0);
+        return;
+    }
+    student_id[readResult] = '\0';
+
+    // Prompt for Student Password
+    send(clientSocket, "Enter Student Password: ", strlen("Enter Student Password: "), 0);
+
+    // Read Student Password
+    readResult = read(clientSocket,password, sizeof(password) - 1);
+    if (readResult <= 0)
+    {
+        send(clientSocket, "Error receiving student password from server", strlen("Error receiving student password from server"), 0);
+        return;
+    }
+    password[readResult] = '\0';
 
     send(clientSocket, "Enter Course ID to Drop the course: ", strlen("Enter Course ID to Drop the course: "), 0);
     recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
 
+    // Check if the student is already enrolled in the course
+    int isEnrolled = 0;
+
+    // Open the student_course.txt file for reading
+    int studentCourseFile = open("student_course.txt", O_RDWR | O_APPEND | O_CREAT, 0666);
+    if (studentCourseFile != -1) {
+        struct student_course temp_entry;
+
+        // Loop through the file to check if the student is already enrolled
+        while (read(studentCourseFile, &temp_entry, sizeof(struct student_course)) > 0) {
+            // Check if the student is already enrolled in the course
+            if (strcmp(student_id, temp_entry.student_id) == 0 && strcmp(enroll_course_id, temp_entry.course_id) == 0) {
+                isEnrolled = 1;
+                break;
+            }
+        }
+    }
+
+    if (!isEnrolled) {
+        send(clientSocket, "Student is not enrolled for the course\n", strlen("Student is not enrolled for the course\n"), 0);
+        return;
+    } else{
     int fd = open("course_database.txt", O_RDWR);
     if (fd == -1) {
         perror("Error opening file");
@@ -143,6 +331,34 @@ void dropCourse(int clientSocket){
     }
 
     close(fd);
+
+
+    struct student_course s_c;
+    // Open the course database file for reading and writing
+    int fd2 = open("student_course.txt", O_RDWR);
+    if (fd2 == -1) {
+        perror("Error opening file");
+        send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
+        return;
+    }
+    int courseFount = 0;
+    while (read(fd2, &s_c, sizeof(s_c)) > 0) {
+        if ((strcmp(student_id, s_c.student_id) == 0) && (strcmp(enroll_course_id, s_c.course_id) == 0)) {
+            // Found the course, write a null string to course_id field
+            lseek(fd2, -sizeof(struct student_course), SEEK_CUR);
+            memset(&s_c.course_id, '\0', sizeof(s_c.course_id));
+            write(fd2, &s_c, sizeof(s_c));
+            courseFound = 1;
+            break;
+        }
+    }
+    if (!courseFound) {
+        send(clientSocket, "Course not found in catalog\n", strlen("Course not found in catalog\n"), 0);
+    } else {
+        send(clientSocket, "Course removed from catalog\n", strlen("Course removed from catalog\n"), 0);
+    }
+    close(fd2);
+    }
 }
 
 int authenticateStudent(int clientSocket)

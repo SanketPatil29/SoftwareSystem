@@ -39,4 +39,9 @@ struct course {
     char credits[10];
 };
 
+struct student_course{
+    char student_id[10];
+    char course_id[10];
+};
+
 #endif // STRUCTURE_H
