@@ -1,3 +1,9 @@
+/*
+Name: Sanket S. Patil (MT2023051).
+
+	Client program for connecting with server
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -48,7 +48,8 @@ void viewAllCourses(int clientSocket) {
         // Send course name in the specified format to the client
         if (!strlen(temp_course.course_name))continue;
         char courseInfo[150];
-        snprintf(courseInfo, sizeof(courseInfo), "%d - %s\n", courseNumber, temp_course.course_name);
+        // snprintf(courseInfo, sizeof(courseInfo), "%d - %s\n", courseNumber, temp_course.course_name);
+        snprintf(courseInfo, sizeof(courseInfo), "%d - Course ID: %s - Name: %s\n", courseNumber, temp_course.course_id, temp_course.course_name);
         send(clientSocket, courseInfo, strlen(courseInfo), 0);
         courseNumber++;
     }
@@ -66,10 +67,24 @@ void enrollNewCourse(int clientSocket) {
     // Ask the client for student ID
     send(clientSocket, "Enter Student ID: ", strlen("Enter Student ID: "), 0);
     recv(clientSocket, student_id, sizeof(student_id), 0);
+    
 
     // Ask the client for course ID to enroll
     send(clientSocket, "Enter Course ID to enroll: ", strlen("Enter Course ID to enroll: "), 0);
-    recv(clientSocket, course_id, sizeof(course_id), 0);
+    int bytesRead = recv(clientSocket, course_id, sizeof(course_id), 0);
+     if(bytesRead <= 0)
+    {
+        close(clientSocket);
+        return ;
+    }
+    if(course_id[bytesRead - 1] == '\n')
+    {
+        course_id[bytesRead - 1] = '\0';
+    }
+    else
+    {
+        course_id[bytesRead] = '\0';
+    }
 
     // Check if the student is already enrolled in the course
     int isEnrolled = 0;
@@ -328,6 +343,8 @@ void dropCourse(int clientSocket){
 
     if (!courseFound) {
         send(clientSocket, "Course not found\n", strlen("Course not found\n"), 0);
+        close(fd);
+        return;
     }
 
     close(fd);
@@ -341,18 +358,18 @@ void dropCourse(int clientSocket){
         send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
         return;
     }
-    int courseFount = 0;
+    int course_Found = 0;
     while (read(fd2, &s_c, sizeof(s_c)) > 0) {
         if ((strcmp(student_id, s_c.student_id) == 0) && (strcmp(enroll_course_id, s_c.course_id) == 0)) {
             // Found the course, write a null string to course_id field
             lseek(fd2, -sizeof(struct student_course), SEEK_CUR);
             memset(&s_c.course_id, '\0', sizeof(s_c.course_id));
             write(fd2, &s_c, sizeof(s_c));
-            courseFound = 1;
+            course_Found = 1;
             break;
         }
     }
-    if (!courseFound) {
+    if (!course_Found) {
         send(clientSocket, "Course not found in catalog\n", strlen("Course not found in catalog\n"), 0);
     } else {
         send(clientSocket, "Course removed from catalog\n", strlen("Course removed from catalog\n"), 0);
@@ -439,7 +456,7 @@ int student_functionality(int clientSocket)
 
         while (1)
         {
-            char adminPrompt[] = "\n----------Student Menu----------:\n - 1. Add Student\n - 2. View Student Details\n - 3. Add Faculty\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 9. Logout and Exit\n";
+            char adminPrompt[] = "\n----------Student Menu----------:\n - 1. View all courses\n - 2. Enroll in a course\n - 3. Drop a coures\n - 4. View Faculty Details\n - 5. Activate Student\n - 6. Block Student\n - 7. Modify Student Details\n - 8. Modify Faculty Details\n - 9. Logout and Exit\n";
             send(clientSocket, adminPrompt, strlen(adminPrompt), 0);
             
             ssize_t readBytes = recv(clientSocket, readbuff, sizeof(readbuff), 0);

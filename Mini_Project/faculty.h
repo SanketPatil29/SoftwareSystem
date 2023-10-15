@@ -19,10 +19,21 @@ void updateDetails(int clientSocket){
 
     // Ask the client for the course ID to be updated
     send(clientSocket, "Enter Course ID to update: ", strlen("Enter Course ID to update: "), 0);
-    recv(clientSocket, course_id, sizeof(course_id), 0);
-
+    int r = recv(clientSocket, course_id, sizeof(course_id), 0);
+    if (r <= 0)
+    {
+        close(clientSocket);
+        return;
+    }
+    if (course_id[r - 1] == '\n')
+    {
+        course_id[r - 1] = '\0';
+    }
+    else{
+    course_id[r] = '\0';
+    }
     // Open the course database file for reading and writing
-    int fd = open("course_database.txt", O_RDWR);
+    int fd = open("course_database.txt", O_RDWR, 0666);
     if (fd == -1) {
         perror("Error opening file");
         send(clientSocket, "Error updating course details\n", strlen("Error updating course details\n"), 0);
@@ -34,11 +45,12 @@ void updateDetails(int clientSocket){
 
     // Loop through the file and find the course by course_id
     while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+        printf("%s %s\n", course_id, temp_course.course_id);
         if (strcmp(course_id, temp_course.course_id) == 0) {
             courseFound = 1;
 
             // Ask the client for the field to update
-            send(clientSocket, "Choose field to update (name, seats): ", strlen("Choose field to update (name, seats): "), 0);
+            send(clientSocket, "Choose field to update: ", strlen("Choose field to update: "), 0);
             recv(clientSocket, update_field, sizeof(update_field), 0);
 
             // Ask the client for the new value
@@ -115,7 +127,6 @@ void removeCourseFromCatalog(int clientSocket) {
 
 
 void viewCourse(int clientSocket) {
-    char search_course_id[50];
     struct course temp_course,t;
 
     // Receive course ID from the client
@@ -126,13 +137,13 @@ void viewCourse(int clientSocket) {
         close(clientSocket);
         return;
     }
-    if(search_course_id[bytesRead - 1] == '\n')
+    if(t.course_id[bytesRead - 1] == '\n')
     {
-        search_course_id[bytesRead - 1] = '\0';
+        t.course_id[bytesRead - 1] = '\0';
     }
     else
     {
-        search_course_id[bytesRead] = '\0';
+        t.course_id[bytesRead] = '\0';
     }
 
     // Open the course database file for reading
@@ -149,9 +160,8 @@ void viewCourse(int clientSocket) {
     //memset(temp_course.course_id, '\0', sizeof(temp_course));
     while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
         // Check if the course ID matches
-        printf("%s %s\n", search_course_id, temp_course.course_id);
         int res = strcmp(t.course_id, temp_course.course_id);
-        printf("%d\n", res);
+    
         if (res == 0) {
             // Send course details to the client
             char facultyDetailsBuffer[1024];
@@ -180,13 +190,25 @@ void addCourse(int clientSocket) {
     // int bytesRead = recv(clientSocket, new_course.course_id, sizeof(new_course.course_id) - 1, 0);
     // new_course.course_id[bytesRead] = '\0';
 
-    send(clientSocket, "Enter the Course_id ", strlen("Enter the Couuse-ID: "), 0);
+    send(clientSocket, "Enter the Course_id ", strlen("Enter the Course_id "), 0);
     int bytesRead = recv(clientSocket, new_course.course_id, sizeof(new_course.course_id), 0);
     if (bytesRead <= 0) {
         perror("Error while receiving  ID");
         return;
     }
-    new_course.course_id[bytesRead] = '\0';
+    if(bytesRead <= 0)
+    {
+        close(clientSocket);
+        return;
+    }
+    if(new_course.course_id[bytesRead - 1] == '\n')
+    {
+        new_course.course_id[bytesRead - 1] = '\0';
+    }
+    else
+    {
+        new_course.course_id[bytesRead] = '\0';
+    }
 
     send(clientSocket, "Enter Course Name: ", strlen("Enter Course Name: "), 0);
     bytesRead = recv(clientSocket, new_course.course_name, sizeof(new_course.course_name) - 1, 0);
@@ -203,11 +225,6 @@ void addCourse(int clientSocket) {
     send(clientSocket, "Enter Credits: ", strlen("Enter Credits: "), 0);
     bytesRead = recv(clientSocket, new_course.credits, sizeof(new_course.credits)-1, 0);
     new_course.credits[bytesRead] = '\0';
-
-    // Additional checks to ensure proper string termination
-    new_course.course_id[sizeof(new_course.course_id) - 1] = '\0';
-    new_course.course_name[sizeof(new_course.course_name) - 1] = '\0';
-    new_course.department[sizeof(new_course.department) - 1] = '\0';
 
     // Open the course database file for appending
     // Open the file to enter this data in the database
@@ -342,10 +359,10 @@ int faculty_functionality(int clientSocket)
             case 4:
                     updateDetails(clientSocket);
                     break;
-            case 5: 
+            // case 5: 
                     // activateStudent(clientSocket);
-                    break;
-            case 8:
+                    // break;
+            case 6:
                 return 0;
             default:
                     break;

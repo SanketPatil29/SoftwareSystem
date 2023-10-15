@@ -1,3 +1,11 @@
+/*
+Name: Sanket S. Patil (MT2023051).
+
+	Concurrent Server program - connecting with multiple client by establising a connection between child process (client handler)
+	and client through local host
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
