@@ -51,17 +51,23 @@ void updateDetails(int clientSocket){
 
             // Ask the client for the field to update
             send(clientSocket, "Choose field to update: ", strlen("Choose field to update: "), 0);
-            recv(clientSocket, update_field, sizeof(update_field), 0);
+            r =  recv(clientSocket, update_field, sizeof(update_field), 0);
+            update_field[r] = '\0';
 
             // Ask the client for the new value
             send(clientSocket, "Enter new value: ", strlen("Enter new value: "), 0);
-            recv(clientSocket, update_value, sizeof(update_value), 0);
+            r = recv(clientSocket, update_value, sizeof(update_value), 0);
+            update_value[r] = '\0';
 
             // Update the chosen field
             if (strcmp(update_field, "name") == 0) {
                 strncpy(temp_course.course_name, update_value, sizeof(temp_course.course_name) - 1);
             } else if (strcmp(update_field, "seats") == 0) {
                 strncpy(temp_course.seats, update_value, sizeof(temp_course.seats) - 1);
+            } else if (strcmp(update_field, "credits") == 0) {
+                strncpy(temp_course.credits, update_value, sizeof(temp_course.credits) - 1);
+            }else if (strcmp(update_field, "department") == 0) {
+                strncpy(temp_course.credits, update_value, sizeof(temp_course.department) - 1);
             } else {
                 send(clientSocket, "Invalid field specified\n", strlen("Invalid field specified\n"), 0);
                 close(fd);
@@ -156,9 +162,9 @@ void viewCourse(int clientSocket) {
 
     bool found = false;
 
-    // Loop to search for the course in the file
+    //Loop to search for the course in the file
     //memset(temp_course.course_id, '\0', sizeof(temp_course));
-    while (read(fd, &temp_course, sizeof(temp_course)) > 0) {
+    while(read(fd, &temp_course, sizeof(temp_course)) > 0) {
         // Check if the course ID matches
         int res = strcmp(t.course_id, temp_course.course_id);
     

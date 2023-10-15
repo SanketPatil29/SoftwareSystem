@@ -295,8 +295,19 @@ void dropCourse(int clientSocket){
     password[readResult] = '\0';
 
     send(clientSocket, "Enter Course ID to Drop the course: ", strlen("Enter Course ID to Drop the course: "), 0);
-    recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
-
+    int r = recv(clientSocket, enroll_course_id, sizeof(enroll_course_id), 0);
+     if (r <= 0)
+    {
+        close(clientSocket);
+        return;
+    }
+    if (enroll_course_id[r - 1] == '\n')
+    {
+        enroll_course_id[r - 1] = '\0';
+    }
+    else{
+    enroll_course_id[r] = '\0';
+    }
     // Check if the student is already enrolled in the course
     int isEnrolled = 0;
 
