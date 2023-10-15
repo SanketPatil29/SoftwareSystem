@@ -96,8 +96,19 @@ void removeCourseFromCatalog(int clientSocket) {
 
     // Ask the client for the course ID to be removed
     send(clientSocket, "Enter Course ID to remove from catalog: ", strlen("Enter Course ID to remove from catalog: "), 0);
-    recv(clientSocket, course_id, sizeof(course_id), 0);
-
+    int r = recv(clientSocket, course_id, sizeof(course_id), 0);
+    if (r <= 0)
+    {
+        close(clientSocket);
+        return;
+    }
+    if (course_id[r - 1] == '\n')
+    {
+        course_id[r - 1] = '\0';
+    }
+    else{
+        course_id[r] = '\0';
+    }
     // Remove the course from the catalog
     struct course temp_course;
 
@@ -122,12 +133,24 @@ void removeCourseFromCatalog(int clientSocket) {
         }
     }
 
-    if (!courseFound) {
-        send(clientSocket, "Course not found in catalog\n", strlen("Course not found in catalog\n"), 0);
-    } else {
-        send(clientSocket, "Course removed from catalog\n", strlen("Course removed from catalog\n"), 0);
-    }
 
+    struct student_course s_c;
+    // Open the course database file for reading and writing
+    int fd2 = open("student_course.txt", O_RDWR);
+    if (fd2 == -1) {
+        perror("Error opening file");
+        send(clientSocket, "Error enrolling in course\n", strlen("Error enrolling in course\n"), 0);
+        return;
+    }
+    while (read(fd2, &s_c, sizeof(s_c)) > 0) {
+        if(strcmp(course_id, s_c.course_id) == 0) {
+            // Found the course, write a null string to course_id field
+            lseek(fd2, -sizeof(struct student_course), SEEK_CUR);
+            memset(&s_c.course_id, '\0', sizeof(s_c.course_id));
+            write(fd2, &s_c, sizeof(s_c));
+        }
+    }
+    close(fd2);
     close(fd);
 }
 
